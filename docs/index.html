@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ручной обменный калькулятор</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #161a24;
+      --surface2: #1e2433;
+      --border: rgba(255,255,255,0.07);
+      --accent: #4fffb0;
+      --red: #ff4d6d;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --radius: 16px;
+      --shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    body.light {
+      --bg: #f0f4ff;
+      --surface: #ffffff;
+      --surface2: #f5f7ff;
+      --border: rgba(0,0,0,0.08);
+      --accent: #0066ff;
+      --red: #e0002a;
+      --text: #111827;
+      --muted: #6b7280;
+      --shadow: 0 24px 60px rgba(0,100,255,0.08);
+    }
+
+    body.graphite {
+      --bg: #1c2030;
+      --surface: #252b3b;
+      --surface2: #2d3447;
+      --border: rgba(255,255,255,0.08);
+      --accent: #c792ea;
+      --red: #ff6b8a;
+      --text: #d6dce8;
+      --muted: #6b7a99;
+      --shadow: 0 24px 60px rgba(0,0,0,0.4);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(79,255,176,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body.light::before {
+      background: radial-gradient(circle, rgba(0,102,255,0.06) 0%, transparent 70%);
+    }
+
+    body.graphite::before {
+      background: radial-gradient(circle, rgba(199,146,234,0.06) 0%, transparent 70%);
+    }
+
+    .app {
+      max-width: 620px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-top: 10px;
+      gap: 16px;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .themes {
+      display: flex;
+      gap: 8px;
+      background: var(--surface);
+      padding: 6px;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+    }
+
+    .theme-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .theme-btn:hover {
+      transform: scale(1.15);
+    }
+
+    .theme-btn.active {
+      border-color: var(--accent);
+    }
+
+    #t-dark { background: #0d0f14; }
+    #t-light { background: #f0f4ff; outline: 1px solid #c8d0e8; }
+    #t-graphite { background: #c792ea; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      animation: slideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.1s; }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 22px;
+    }
+
+    .helper-text {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: 'DM Sans', sans-serif;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,255,176,0.1);
+    }
+
+    body.light input:focus,
+    body.light select:focus {
+      box-shadow: 0 0 0 3px rgba(0,102,255,0.1);
+    }
+
+    body.graphite input:focus,
+    body.graphite select:focus {
+      box-shadow: 0 0 0 3px rgba(199,146,234,0.12);
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    .mb16 { margin-bottom: 16px; }
+    .mb20 { margin-bottom: 20px; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .currency-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .swap-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.35s, box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+
+    .swap-btn:hover {
+      background: var(--accent);
+      color: #000;
+      transform: rotate(180deg);
+      box-shadow: 0 4px 20px rgba(79,255,176,0.3);
+    }
+
+    body.light .swap-btn:hover {
+      box-shadow: 0 4px 20px rgba(0,102,255,0.25);
+    }
+
+    .result-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+    }
+
+    .result-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+
+    .result-text.empty {
+      font-size: 14px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 13px;
+      width: auto;
+      border-radius: 8px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .delete-panel {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--surface2);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: none;
+    }
+
+    .delete-panel h4 {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .currency-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .currency-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .currency-chip input {
+      display: none;
+    }
+
+    .currency-chip.selected {
+      border-color: var(--red);
+      color: var(--red);
+      background: rgba(255,77,109,0.08);
+    }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .history-item:hover {
+      border-color: rgba(79,255,176,0.2);
+    }
+
+    body.light .history-item:hover {
+      border-color: rgba(0,102,255,0.2);
+    }
+
+    .h-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .h-amount {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .h-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.45;
+    }
+
+    .h-note {
+      font-size: 12px;
+      color: var(--accent);
+      margin-top: 4px;
+      opacity: 0.9;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .h-del {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 18px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .h-del:hover {
+      border-color: var(--red);
+      color: var(--red);
+      background: rgba(255,77,109,0.08);
+    }
+
+    .empty-history {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 24px 0;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .result-text {
+        font-size: 18px;
+      }
+    }
+  </style>
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0b0e13">
+<link rel="manifest" href="manifest.webmanifest">
+<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");</script>
+</head>
+<body class="dark">
+  <div class="app">
+    <header>
+      <div class="logo">fx<span>.</span>manual</div>
+      <div class="themes">
+        <button class="theme-btn active" id="t-dark" type="button" title="Тёмная"></button>
+        <button class="theme-btn" id="t-light" type="button" title="Светлая"></button>
+        <button class="theme-btn" id="t-graphite" type="button" title="Графит"></button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="card-title">Обмен валют</div>
+
+      <div class="mb16">
+        <label for="amount">Сумма</label>
+        <input type="number" id="amount" placeholder="0.00" min="0" step="any">
+      </div>
+
+      <div class="currency-row">
+        <div class="field">
+          <label for="fromCurrency">Отдаю</label>
+          <select id="fromCurrency"></select>
+        </div>
+        <button class="swap-btn" id="swapBtn" type="button" title="Поменять местами">⇄</button>
+        <div class="field">
+          <label for="toCurrency">Получаю</label>
+          <select id="toCurrency"></select>
+        </div>
+      </div>
+
+      <div class="mb16">
+        <label for="exchangeRate">Курс обмена</label>
+        <input type="number" id="exchangeRate" placeholder="1.00" min="0" step="any">
+        <div class="helper-text">Курс вводится вручную за 1 единицу валюты, которую отдаёшь.</div>
+      </div>
+
+      <div class="mb20">
+        <label for="noteInput">Комментарий (необязательно)</label>
+        <input type="text" id="noteInput" placeholder="Например: обменник на вокзале">
+      </div>
+
+      <div class="result-box">
+        <div class="result-text empty" id="result">Введите сумму и курс обмена</div>
+      </div>
+
+      <button class="btn btn-primary" id="convert" type="button">Рассчитать</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Валюты</div>
+
+      <div class="mb16 field">
+        <label for="newCurrencyName">Новая валюта</label>
+        <input type="text" id="newCurrencyName" placeholder="USD, EUR, GBP…" maxlength="10">
+      </div>
+
+      <div class="two-col">
+        <button class="btn btn-ghost" id="addCurrency" type="button">+ Добавить</button>
+        <button class="btn btn-ghost" id="deleteCurrencyBtn" type="button">✕ Удалить</button>
+      </div>
+
+      <div class="delete-panel" id="deletePanel">
+        <h4>Выберите для удаления</h4>
+        <div class="currency-chips" id="currencyChips"></div>
+        <button class="btn btn-danger" id="confirmDelete" type="button">Удалить выбранные</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="history-header">
+        <div class="card-title" style="margin:0">История</div>
+        <button class="btn btn-ghost btn-sm" id="clearHistory" type="button">Очистить</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+
+  <script>
+    let currencies = JSON.parse(localStorage.getItem('currencies')) || [];
+    let history = JSON.parse(localStorage.getItem('history')) || [];
+    let theme = localStorage.getItem('theme') || 'dark';
+
+    if (!Array.isArray(currencies)) {
+      currencies = Object.keys(currencies);
+    }
+
+    const numberFormatter = new Intl.NumberFormat('ru-RU', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    function formatNumber(value) {
+      return numberFormatter.format(Number(value) || 0);
+    }
+
+    function saveCurrencies() {
+      localStorage.setItem('currencies', JSON.stringify(currencies));
+    }
+
+    function saveHistory() {
+      localStorage.setItem('history', JSON.stringify(history));
+    }
+
+    function applyTheme() {
+      document.body.className = theme;
+      const ids = {
+        dark: 't-dark',
+        light: 't-light',
+        graphite: 't-graphite'
+      };
+
+      document.querySelectorAll('.theme-btn').forEach(button => {
+        button.classList.toggle('active', button.id === ids[theme]);
+      });
+
+      localStorage.setItem('theme', theme);
+    }
+
+    function setTheme(nextTheme) {
+      theme = nextTheme;
+      applyTheme();
+    }
+
+    function populateCurrencies() {
+      const fromSelect = document.getElementById('fromCurrency');
+      const toSelect = document.getElementById('toCurrency');
+      const previousFrom = fromSelect.value;
+      const previousTo = toSelect.value;
+
+      const options = currencies
+        .map(currency => `<option value="${currency}">${currency}</option>`)
+        .join('');
+
+      fromSelect.innerHTML = options;
+      toSelect.innerHTML = options;
+
+      if (currencies.includes(previousFrom)) {
+        fromSelect.value = previousFrom;
+      }
+
+      if (currencies.includes(previousTo)) {
+        toSelect.value = previousTo;
+      }
+
+      if (!fromSelect.value && currencies.length) {
+        fromSelect.value = currencies[0];
+      }
+
+      if (!toSelect.value && currencies.length > 1) {
+        toSelect.value = currencies[1];
+      }
+
+      if (!toSelect.value && currencies.length) {
+        toSelect.value = currencies[0];
+      }
+    }
+
+    function normalizeHistoryEntry(entry) {
+      if (entry && typeof entry === 'object' && 'fromAmount' in entry) {
+        return entry;
+      }
+
+      return {
+        date: entry?.date || '',
+        time: entry?.time || '',
+        fromAmount: 0,
+        fromCurrency: '',
+        rate: 0,
+        toAmount: 0,
+        toCurrency: '',
+        note: entry?.note || ''
+      };
+    }
+
+    function convert() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      const from = document.getElementById('fromCurrency').value;
+      const to = document.getElementById('toCurrency').value;
+      const rate = parseFloat(document.getElementById('exchangeRate').value);
+      const note = document.getElementById('noteInput').value.trim();
+      const resultEl = document.getElementById('result');
+
+      if (!from || !to || isNaN(amount) || isNaN(rate) || amount <= 0 || rate <= 0) {
+        resultEl.className = 'result-text empty';
+        resultEl.textContent = 'Введите корректные значения';
+        resultEl.style.animation = 'none';
+        void resultEl.offsetHeight;
+        resultEl.style.animation = 'shake 0.4s';
+        return;
+      }
+
+      const resultValue = amount * rate;
+      resultEl.className = 'result-text';
+      resultEl.textContent = `${formatNumber(amount)} ${from} = ${formatNumber(resultValue)} ${to}`;
+
+      const now = new Date();
+      history.unshift({
+        time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        date: now.toLocaleDateString('ru-RU'),
+        fromAmount: amount,
+        fromCurrency: from,
+        rate,
+        toAmount: resultValue,
+        toCurrency: to,
+        note
+      });
+
+      saveHistory();
+      updateHistory();
+      document.getElementById('noteInput').value = '';
+    }
+
+    function updateHistory() {
+      const list = document.getElementById('historyList');
+      list.innerHTML = '';
+
+      if (!history.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-history';
+        empty.textContent = 'История пуста';
+        list.appendChild(empty);
+        return;
+      }
+
+      history.map(normalizeHistoryEntry).forEach((entry, index) => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+
+        const main = document.createElement('div');
+        main.className = 'h-main';
+
+        const amount = document.createElement('div');
+        amount.className = 'h-amount';
+        amount.textContent = `${formatNumber(entry.fromAmount)} ${entry.fromCurrency} → ${formatNumber(entry.toAmount)} ${entry.toCurrency}`;
+
+        const meta = document.createElement('div');
+        meta.className = 'h-meta';
+        meta.textContent = `${entry.date} · ${entry.time} · Курс: ${formatNumber(entry.rate)}`;
+
+        main.appendChild(amount);
+        main.appendChild(meta);
+
+        if (entry.note) {
+          const noteEl = document.createElement('div');
+          noteEl.className = 'h-note';
+          noteEl.textContent = entry.note;
+          main.appendChild(noteEl);
+        }
+
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'h-del';
+        deleteButton.type = 'button';
+        deleteButton.textContent = '×';
+        deleteButton.title = 'Удалить запись';
+        deleteButton.addEventListener('click', () => deleteEntry(index));
+
+        item.appendChild(main);
+        item.appendChild(deleteButton);
+        list.appendChild(item);
+      });
+    }
+
+    function deleteEntry(index) {
+      history.splice(index, 1);
+      saveHistory();
+      updateHistory();
+    }
+
+    function renderDeleteChips() {
+      const chips = document.getElementById('currencyChips');
+      chips.innerHTML = '';
+
+      currencies.forEach(currency => {
+        const label = document.createElement('label');
+        label.className = 'currency-chip';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = currency;
+        checkbox.addEventListener('change', () => {
+          label.classList.toggle('selected', checkbox.checked);
+        });
+
+        const text = document.createElement('span');
+        text.textContent = currency;
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        chips.appendChild(label);
+      });
+    }
+
+    document.getElementById('swapBtn').addEventListener('click', () => {
+      const fromSelect = document.getElementById('fromCurrency');
+      const toSelect = document.getElementById('toCurrency');
+      const rateInput = document.getElementById('exchangeRate');
+      const currentRate = parseFloat(rateInput.value);
+
+      [fromSelect.value, toSelect.value] = [toSelect.value, fromSelect.value];
+
+      if (currentRate > 0) {
+        rateInput.value = (1 / currentRate).toFixed(6);
+      }
+    });
+
+    document.getElementById('addCurrency').addEventListener('click', () => {
+      const input = document.getElementById('newCurrencyName');
+      const name = input.value.trim().toUpperCase();
+
+      if (!name) {
+        alert('Введите название валюты');
+        return;
+      }
+
+      if (currencies.includes(name)) {
+        alert(`Валюта ${name} уже существует`);
+        return;
+      }
+
+      currencies.push(name);
+      saveCurrencies();
+      populateCurrencies();
+      input.value = '';
+      document.getElementById('fromCurrency').value = name;
+    });
+
+    document.getElementById('deleteCurrencyBtn').addEventListener('click', () => {
+      const panel = document.getElementById('deletePanel');
+      const isOpen = panel.style.display === 'block';
+      panel.style.display = isOpen ? 'none' : 'block';
+
+      if (!isOpen) {
+        renderDeleteChips();
+      }
+    });
+
+    document.getElementById('confirmDelete').addEventListener('click', () => {
+      const checked = Array.from(document.querySelectorAll('#currencyChips input:checked'));
+
+      if (!checked.length) {
+        alert('Ничего не выбрано');
+        return;
+      }
+
+      if (checked.length === currencies.length) {
+        alert('Нужно оставить хотя бы одну валюту');
+        return;
+      }
+
+      const selected = checked.map(item => item.value);
+      currencies = currencies.filter(currency => !selected.includes(currency));
+      saveCurrencies();
+      populateCurrencies();
+      document.getElementById('deletePanel').style.display = 'none';
+    });
+
+    document.getElementById('clearHistory').addEventListener('click', () => {
+      if (!history.length) {
+        return;
+      }
+
+      if (confirm('Очистить всю историю?')) {
+        history = [];
+        saveHistory();
+        updateHistory();
+      }
+    });
+
+    document.querySelectorAll('#amount, #exchangeRate, #noteInput').forEach(element => {
+      element.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          convert();
+        }
+      });
+    });
+
+    document.querySelectorAll('.theme-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        setTheme(button.id.replace('t-', ''));
+      });
+    });
+
+    history = history.map(normalizeHistoryEntry);
+
+    applyTheme();
+
+    if (!currencies.length) {
+      currencies = ['RUB', 'USD', 'EUR'];
+      saveCurrencies();
+    }
+
+    populateCurrencies();
+    document.getElementById('convert').addEventListener('click', convert);
+    updateHistory();
+  </script>
+</body>
+</html>
